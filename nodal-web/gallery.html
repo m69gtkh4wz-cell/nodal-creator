@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>NODAL — GALERIE</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#111;color:#fff;font-family:'Courier New',monospace;min-height:100vh}
+#login{position:fixed;inset:0;background:#111;display:flex;align-items:center;justify-content:center;z-index:100}
+#login-box{background:#000;border:1px solid #333;padding:40px;width:360px;text-align:center}
+#login-box h1{font-size:14px;letter-spacing:4px;margin-bottom:24px;color:#fff}
+#pwd{width:100%;padding:10px;background:#111;border:1px solid #333;color:#fff;
+  font-family:'Courier New',monospace;font-size:13px;text-align:center;outline:none;margin-bottom:16px}
+#pwd:focus{border-color:#fff}
+#login-btn{width:100%;padding:12px;background:#fff;color:#000;border:none;
+  font-family:'Courier New',monospace;font-size:12px;letter-spacing:3px;cursor:pointer}
+#login-btn:hover{background:#ccc}
+#err{color:#f55;font-size:10px;margin-top:8px;min-height:16px}
+#app{display:none;padding:24px}
+#header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;
+  border-bottom:1px solid #333;padding-bottom:16px}
+#header h1{font-size:13px;letter-spacing:4px}
+#stats{font-size:10px;color:#666}
+#dl-all{padding:8px 16px;background:#fff;color:#000;border:none;font-family:'Courier New',monospace;
+  font-size:10px;letter-spacing:2px;cursor:pointer}
+#dl-all:hover{background:#ccc}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.card{background:#000;border:1px solid #222;overflow:hidden;cursor:pointer}
+.card:hover{border-color:#555}
+.card img{width:100%;display:block}
+.card-info{padding:8px 10px;font-size:9px;color:#555;letter-spacing:1px}
+.card-date{color:#333;margin-top:2px}
+.pair{background:#111;border:1px solid #222;padding:12px;margin-bottom:16px}
+.pair-header{font-size:10px;color:#555;margin-bottom:8px;letter-spacing:2px}
+.pair-imgs{display:grid;grid-template-columns:272px 1fr;gap:8px}
+.pair-imgs img{width:100%;display:block;border:1px solid #222}
+#loading{text-align:center;padding:60px;color:#555;font-size:11px;letter-spacing:2px}
+#view-toggle{display:flex;gap:8px;margin-bottom:16px}
+.vbtn{padding:6px 14px;background:#000;color:#555;border:1px solid #333;
+  font-family:'Courier New',monospace;font-size:9px;cursor:pointer;letter-spacing:1px}
+.vbtn.on{background:#fff;color:#000;border-color:#fff}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div id="login-box">
+    <h1>NODAL — GALERIE</h1>
+    <input type="password" id="pwd" placeholder="mot de passe" autofocus>
+    <button id="login-btn">ENTRER</button>
+    <div id="err"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div id="header">
+    <h1>NODAL — GALERIE</h1>
+    <div style="display:flex;align-items:center;gap:16px">
+      <span id="stats"></span>
+      <button id="dl-all">TOUT TÉLÉCHARGER</button>
+    </div>
+  </div>
+  <div id="view-toggle">
+    <button class="vbtn on" id="v-pairs">PAR PAIRES</button>
+    <button class="vbtn" id="v-grid">GRILLE</button>
+  </div>
+  <div id="loading">Chargement...</div>
+  <div id="grid"></div>
+</div>
+
+<script>
+const SB_URL = 'https://wlrkwnxwxqqonspygtjw.supabase.co'
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indscmt3bnh3eHFxb25zcHlndGp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4OTgwNDAsImV4cCI6MjA5MzQ3NDA0MH0.3hlqY0sCKja2YajPZrca2a5Dj_S8mp4Vfv-VWImK4kI'
+const PASSWORD = 'nodal2024'
+
+let allFiles = []
+let viewMode = 'pairs'
+
+document.getElementById('login-btn').addEventListener('click', login)
+document.getElementById('pwd').addEventListener('keydown', e => { if(e.key==='Enter') login() })
+
+function login(){
+  if(document.getElementById('pwd').value === PASSWORD){
+    document.getElementById('login').style.display='none'
+    document.getElementById('app').style.display='block'
+    loadGallery()
+  } else {
+    document.getElementById('err').textContent = 'Mot de passe incorrect'
+  }
+}
+
+async function loadGallery(){
+  const res = await fetch(`${SB_URL}/storage/v1/object/list/creations`, {
+    method: 'POST',
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': `Bearer ${SB_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ limit: 1000, offset: 0, sortBy: { column: 'created_at', order: 'desc' } })
+  })
+  const data = await res.json()
+  allFiles = Array.isArray(data) ? data : []
+  document.getElementById('loading').style.display='none'
+  document.getElementById('stats').textContent = `${Math.floor(allFiles.length/2)} créations`
+  render()
+}
+
+function pubUrl(name){ return `${SB_URL}/storage/v1/object/public/creations/${name}` }
+
+function render(){
+  const grid = document.getElementById('grid')
+  grid.innerHTML = ''
+  
+  // Grouper par timestamp (nom = timestamp_type.png)
+  const pairs = {}
+  allFiles.forEach(f => {
+    const m = f.name.match(/^(\d+)_(visuel|panel)\.png$/)
+    if(!m) return
+    const ts = m[1], type = m[2]
+    if(!pairs[ts]) pairs[ts] = {}
+    pairs[ts][type] = f.name
+  })
+
+  const sorted = Object.entries(pairs).sort((a,b) => b[0]-a[0])
+  
+  if(viewMode === 'pairs'){
+    sorted.forEach(([ts, files]) => {
+      const div = document.createElement('div')
+      div.className = 'pair'
+      const date = new Date(parseInt(ts)).toLocaleString('fr-FR')
+      div.innerHTML = `<div class="pair-header">CRÉATION — ${date}</div>
+        <div class="pair-imgs">
+          ${files.panel ? `<img src="${pubUrl(files.panel)}" alt="panel">` : '<div style="background:#111;aspect-ratio:272/700"></div>'}
+          ${files.visuel ? `<img src="${pubUrl(files.visuel)}" alt="visuel">` : ''}
+        </div>`
+      if(files.visuel){
+        div.querySelector('img:last-child').addEventListener('click',()=>window.open(pubUrl(files.visuel)))
+      }
+      grid.appendChild(div)
+    })
+  } else {
+    // Mode grille — seulement les visuels
+    sorted.forEach(([ts, files]) => {
+      if(!files.visuel) return
+      const card = document.createElement('div')
+      card.className = 'card'
+      const date = new Date(parseInt(ts)).toLocaleString('fr-FR')
+      card.innerHTML = `<img src="${pubUrl(files.visuel)}" loading="lazy">
+        <div class="card-info">NODAL<div class="card-date">${date}</div></div>`
+      card.addEventListener('click', () => window.open(pubUrl(files.visuel)))
+      grid.appendChild(card)
+    })
+  }
+}
+
+document.getElementById('v-pairs').addEventListener('click', () => {
+  viewMode='pairs'
+  document.getElementById('v-pairs').classList.add('on')
+  document.getElementById('v-grid').classList.remove('on')
+  render()
+})
+document.getElementById('v-grid').addEventListener('click', () => {
+  viewMode='grid'
+  document.getElementById('v-grid').classList.add('on')
+  document.getElementById('v-pairs').classList.remove('on')
+  render()
+})
+
+document.getElementById('dl-all').addEventListener('click', async () => {
+  // Ouvrir tous les visuels dans de nouveaux onglets
+  const pairs = {}
+  allFiles.forEach(f => {
+    const m = f.name.match(/^(\d+)_(visuel|panel)\.png$/)
+    if(m) { if(!pairs[m[1]])pairs[m[1]]={};pairs[m[1]][m[2]]=f.name }
+  })
+  Object.values(pairs).forEach(p => {
+    if(p.visuel) window.open(pubUrl(p.visuel))
+    if(p.panel) window.open(pubUrl(p.panel))
+  })
+})
+</script>
+</body>
+</html>

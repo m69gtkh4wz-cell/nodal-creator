@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NODAL — CREATOR</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Courier New',monospace;font-size:11px}
+body{display:flex;background:#888}
+
+/* ── MODALE ACCUEIL ─────────────────────────────── */
+#modal-overlay{
+  position:fixed;inset:0;z-index:1000;
+  background:repeating-conic-gradient(#aaa 0% 25%,#888 0% 50%) 0 0/4px 4px;
+  display:flex;align-items:center;justify-content:center;
+}
+#modal{
+  width:480px;background:#fff;
+  border:2px solid #000;
+  box-shadow:4px 4px 0 #000;
+  font-family:'Courier New',monospace;
+}
+#modal-title{
+  background:#000;color:#fff;
+  padding:10px 16px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;letter-spacing:4px;font-weight:bold;
+  position:relative;
+}
+#modal-title::before{
+  content:'';position:absolute;left:22px;right:22px;top:4px;bottom:4px;
+  background:repeating-linear-gradient(transparent 0 3px,rgba(255,255,255,.15) 3px 4px);
+}
+#modal-title span{position:relative;background:#000;padding:0 8px;z-index:1}
+#modal-body{padding:24px 28px}
+#modal-body p{font-size:11px;line-height:1.8;color:#000;margin-bottom:12px}
+#modal-body .accept-line{
+  font-size:10px;color:#555;font-style:italic;
+  border-top:1px solid #ccc;padding-top:12px;margin-top:16px;margin-bottom:0;
+}
+#modal-btn{
+  display:block;width:100%;padding:14px;
+  background:#000;color:#fff;
+  border:none;font-family:'Courier New',monospace;
+  font-size:12px;letter-spacing:4px;cursor:pointer;
+  border-top:2px solid #000;
+  transition:background .15s;
+}
+#modal-btn:hover{background:#333}
+
+/* ── PANEL ──────────────────────────────────────── */
+#panel{width:272px;min-width:272px;height:100vh;flex-shrink:0;position:relative}
+#panel-bg{position:absolute;inset:0}
+#pw{position:absolute;inset:4px;background:#fff;display:flex;flex-direction:column;
+  border:1px solid #000;box-shadow:2px 2px 0 #000}
+#ptb{height:20px;background:#000;flex-shrink:0;position:relative;display:flex;
+  align-items:center;justify-content:center}
+#ptb::before{content:'';position:absolute;left:22px;right:6px;top:3px;bottom:3px;
+  background:repeating-linear-gradient(transparent 0 3px,#fff 3px 4px)}
+#ptb-title{position:relative;z-index:1;color:#fff;font-size:10px;letter-spacing:2px;background:#000;padding:0 6px}
+#ptb-close{position:absolute;left:5px;width:12px;height:12px;background:#fff;
+  border:1px solid #000;cursor:pointer;z-index:2}
+#psc{flex:1;overflow:hidden;position:relative}
+#psc-inner{position:absolute;top:0;left:0;right:14px}
+#psb{height:16px;flex-shrink:0;background:#fff;border-top:1px solid #000;
+  display:flex;align-items:center;justify-content:space-between;padding:0 6px;font-size:9px}
+
+/* SCROLLBAR */
+#sb{position:absolute;right:0;top:0;bottom:0;width:14px;background:#ccc;border-left:1px solid #000}
+#sb-thumb{position:absolute;left:1px;right:1px;background:#fff;border:1px solid #000;cursor:pointer;min-height:20px}
+#sb-up,#sb-dn{position:absolute;left:0;right:0;height:14px;background:#fff;border:1px solid #000;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:8px}
+#sb-up{top:0}#sb-dn{bottom:0}
+#sb-track{position:absolute;left:0;right:0;top:14px;bottom:14px}
+
+/* ── CANVAS ─────────────────────────────────────── */
+#ca{flex:1;position:relative;overflow:hidden;background:#000}
+#gc{position:absolute;inset:0;display:block}
+#ov{position:absolute;inset:0;display:block;pointer-events:none}
+#hov{position:absolute;border:1px solid rgba(255,255,255,.5);border-radius:50%;
+  transform:translate(-50%,-50%);display:none;pointer-events:none}
+#flash{position:absolute;bottom:0;left:0;right:0;height:22px;background:rgba(0,0,0,.85);
+  color:#bbb;display:flex;align-items:center;padding:0 8px;font-size:10px;
+  opacity:0;transition:opacity .3s;pointer-events:none;z-index:10}
+#flash.on{opacity:1}
+
+/* ── UI ─────────────────────────────────────────── */
+.sec{position:relative;margin:8px 0 4px}
+.sec::before{content:'';position:absolute;left:0;right:14px;top:50%;height:1px;background:#000}
+.sec-lbl{position:relative;background:#fff;padding:0 4px 0 8px;font-size:10px;font-weight:bold;display:inline-block}
+.sr{margin-bottom:8px;padding:0 8px 0 10px}
+.sl-row{display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px}
+.sl-track{height:6px;background:#fff;border-top:1px solid #000;border-left:1px solid #000;
+  border-right:1px solid #fff;border-bottom:1px solid #fff;box-shadow:inset 1px 1px 0 #555;
+  position:relative;cursor:pointer}
+.sl-thumb{position:absolute;top:-5px;width:10px;height:14px;background:#ddd;
+  border-top:1px solid #fff;border-left:1px solid #fff;border-right:1px solid #000;border-bottom:1px solid #000;
+  box-shadow:inset -1px -1px 0 #555,inset 1px 1px 0 #fff;transform:translateX(-50%);cursor:pointer}
+.btn-row{display:flex;gap:3px;margin:3px 10px}
+.btn{flex:1;height:22px;background:#fff;font-family:'Courier New',monospace;font-size:9px;
+  cursor:pointer;color:#000;border-top:1px solid #fff;border-left:1px solid #fff;
+  border-right:1px solid #000;border-bottom:1px solid #000;box-shadow:inset -1px -1px 0 #555}
+.btn:hover{background:#eee}
+.btn.on{background:#000;color:#fff;border-top:1px solid #000;border-left:1px solid #000;
+  border-right:1px solid #fff;border-bottom:1px solid #fff;box-shadow:inset 1px 1px 0 #555}
+.btn.full{width:100%}
+.ck-row{display:flex;gap:10px;padding:0 10px;margin-bottom:4px}
+.ck{display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px}
+.ckb{width:11px;height:11px;background:#fff;flex-shrink:0;
+  border-top:1px solid #000;border-left:1px solid #000;
+  border-right:1px solid #fff;border-bottom:1px solid #fff;box-shadow:inset 1px 1px 0 #555}
+.ckb.on::after{content:'✓';font-size:8px;display:flex;align-items:center;justify-content:center;margin-top:-1px}
+.shp-row{display:flex;gap:3px;padding:0 10px;margin-bottom:6px}
+.shp{flex:1;height:26px;background:#fff;font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  border-top:1px solid #fff;border-left:1px solid #fff;
+  border-right:1px solid #000;border-bottom:1px solid #000;box-shadow:inset -1px -1px 0 #555}
+.shp.on{background:#000;color:#fff}
+.shp:hover:not(.on){background:#eee}
+#lk{width:16px;height:16px;flex-shrink:0;background:#fff;font-size:10px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  border-top:1px solid #fff;border-left:1px solid #fff;
+  border-right:1px solid #000;border-bottom:1px solid #000;box-shadow:inset -1px -1px 0 #555}
+#lk.on{background:#000;color:#fff}
+.lk-row{display:flex;align-items:center;gap:4px}
+#txt-field{width:100%;height:48px;font-family:'Courier New',monospace;font-size:12px;
+  background:#fff;color:#000;border:none;outline:none;padding:3px 5px;
+  border-top:1px solid #000;border-left:1px solid #000;
+  border-right:1px solid #fff;border-bottom:1px solid #fff;
+  box-shadow:inset 1px 1px 0 #555;resize:none;line-height:1.4;overflow-y:auto}
+#free-ind{display:none;background:#000;color:#fff;font-size:9px;padding:1px 4px;letter-spacing:1px}
+#free-ind.on{display:inline}
+
+/* Export button spécial */
+#b-export{height:28px;font-size:11px;letter-spacing:2px;background:#000;color:#fff;
+  border-top:1px solid #000;border-left:1px solid #000;
+  border-right:1px solid #fff;border-bottom:1px solid #fff}
+#b-export:hover{background:#333}
+</style>
+</head>
+<body>
+
+<!-- MODALE ACCUEIL -->
+<div id="modal-overlay">
+  <div id="modal">
+    <div id="modal-title"><span>NODAL — CREATOR</span></div>
+    <div id="modal-body">
+      <p>Bienvenue ! <strong>NODAL</strong> est un outil de création de motifs typographiques génératifs. Le principe est simple : joue avec les paramètres, crée des variantes, et exporte tes créations.</p>
+      <p>Tes exports seront collectés et utilisés dans le cadre d'un <strong>projet éditorial</strong>. Plus il y a de variantes, mieux c'est — alors n'hésite pas à exporter souvent et à explorer toutes les possibilités.</p>
+      <p>Les créations sont <strong>anonymes</strong> et partagées uniquement dans le cadre de ce projet.</p>
+      <p class="accept-line">En cliquant sur "Commencer", tu acceptes que tes créations soient utilisées dans ce projet éditorial.</p>
+    </div>
+    <button id="modal-btn">COMMENCER</button>
+  </div>
+</div>
+
+<!-- PANEL -->
+<div id="panel">
+  <canvas id="panel-bg"></canvas>
+  <div id="pw">
+    <div id="ptb">
+      <div id="ptb-close"></div>
+      <span id="ptb-title">NODAL</span>
+    </div>
+    <div id="psc">
+      <div id="psc-inner">
+        <div class="sec"><span class="sec-lbl">TEXTE</span></div>
+        <div style="padding:0 10px;margin-bottom:4px">
+          <textarea id="txt-field" autocomplete="off" spellcheck="false">NODAL</textarea>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="b-place">PLACER</button>
+          <button class="btn" id="b-clrtxt">EFFACER</button>
+        </div>
+        <div class="sec"><span class="sec-lbl">GRILLE</span></div>
+        <div class="sr" id="sr-cols"><div class="sl-row"><span>COLS</span><span id="v-cols">34</span></div><div class="sl-track"><div class="sl-thumb"></div></div></div>
+        <div class="sr" id="sr-rows"><div class="sl-row"><span>ROWS</span><span id="v-rows">26</span></div><div class="sl-track"><div class="sl-thumb"></div></div></div>
+        <div class="sr" id="sr-margin"><div class="sl-row"><span>MARGE</span><span id="v-margin">50</span></div><div class="sl-track"><div class="sl-thumb"></div></div></div>
+        <div class="sr" id="sr-fusion"><div class="sl-row"><span>FUSION</span><span id="v-fusion">0</span></div><div class="sl-track"><div class="sl-thumb"></div></div></div>
+        <div class="sec"><span class="sec-lbl">BANDES</span></div>
+        <div class="sr" id="sr-bw1"><div class="sl-row"><span>EPAISSEUR</span><span id="v-bw1">2.0</span></div><div class="sl-track"><div class="sl-thumb"></div></div></div>
+        <div class="sr" id="sr-bw2"><div class="sl-row"><span>ESPACEMENT</span><span id="v-bw2">6.0</span></div><div class="sl-track"><div class="sl-thumb"></div></div></div>
+        <div class="sr" id="sr-bands"><div class="sl-row"><span>NB BANDES</span><span id="v-bands">20</span></div><div class="sl-track"><div class="sl-thumb"></div></div></div>
+        <div class="sr" id="sr-fgval"><div class="sl-row"><span>VALEUR FG</span><span id="v-fgval">255</span></div><div class="sl-track"><div class="sl-thumb"></div></div></div>
+        <div class="sec"><span class="sec-lbl">FORME</span></div>
+        <div class="shp-row">
+          <div class="shp on" data-s="0">●</div>
+          <div class="shp" data-s="1">▬</div>
+          <div class="shp" data-s="2">◆</div>
+          <div class="shp" data-s="3">─</div>
+        </div>
+        <div class="sr" id="sr-sw">
+          <div class="sl-row"><span>LARGEUR</span><div class="lk-row"><span id="v-sw">28.0</span><div id="lk" class="on">🔒</div></div></div>
+          <div class="sl-track"><div class="sl-thumb"></div></div>
+        </div>
+        <div class="sr" id="sr-sh"><div class="sl-row"><span>HAUTEUR</span><span id="v-sh">28.0</span></div><div class="sl-track"><div class="sl-thumb"></div></div></div>
+        <div class="sr" id="sr-rot"><div class="sl-row"><span>ROTATION</span><span id="v-rot">0°</span></div><div class="sl-track"><div class="sl-thumb"></div></div></div>
+        <div class="sec"><span class="sec-lbl">AFFICHAGE</span></div>
+        <div class="ck-row">
+          <div class="ck" id="ck-grid"><div class="ckb on"></div>GRILLE</div>
+          <div class="ck" id="ck-inv"><div class="ckb"></div>INVERT</div>
+          <div class="ck" id="ck-hov"><div class="ckb on"></div>SURVOL</div>
+        </div>
+        <div class="sr" id="sr-galpha"><div class="sl-row"><span>OPACITE</span><span id="v-galpha">60</span></div><div class="sl-track"><div class="sl-thumb"></div></div></div>
+        <div class="sec"><span class="sec-lbl">MODE RENDU</span></div>
+        <div class="btn-row">
+          <button class="btn on" id="b-plein">PLEIN</button>
+          <button class="btn" id="b-bandes">BANDES</button>
+        </div>
+        <div class="sec"><span class="sec-lbl">ACTIONS</span></div>
+        <div class="btn-row"><button class="btn full" id="b-clear">EFFACER TOUT</button></div>
+        <div class="btn-row"><button class="btn full on" id="b-export">EXPORT</button></div>
+        <div style="height:10px"></div>
+      </div>
+      <div id="sb">
+        <div id="sb-up">▲</div>
+        <div id="sb-track"><div id="sb-thumb"></div></div>
+        <div id="sb-dn">▼</div>
+      </div>
+    </div>
+    <div id="psb">
+      <span id="st-pts">0 pts</span>
+      <span id="st-fps">-- fps</span>
+    </div>
+  </div>
+</div>
+
+<div id="ca">
+  <canvas id="gc"></canvas>
+  <canvas id="ov"></canvas>
+  <div id="hov"></div>
+  <div id="flash"></div>
+</div>
+
+<script>
+'use strict'
+
+// ── SUPABASE ─────────────────────────────────────────────────
+const SB_URL = 'https://wlrkwnxwxqqonspygtjw.supabase.co'
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indscmt3bnh3eHFxb25zcHlndGp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4OTgwNDAsImV4cCI6MjA5MzQ3NDA0MH0.3hlqY0sCKja2YajPZrca2a5Dj_S8mp4Vfv-VWImK4kI'
+
+async function uploadToSupabase(blob, filename){
+  const res = await fetch(`${SB_URL}/storage/v1/object/creations/${filename}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': `Bearer ${SB_KEY}`,
+      'Content-Type': 'image/png',
+      'x-upsert': 'true'
+    },
+    body: blob
+  })
+  if(!res.ok) throw new Error(`Upload failed: ${res.status}`)
+  return `${SB_URL}/storage/v1/object/public/creations/${filename}`
+}
+
+// ── MODALE ───────────────────────────────────────────────────
+document.getElementById('modal-btn').addEventListener('click', () => {
+  document.getElementById('modal-overlay').style.display = 'none'
+})
+
+// ── POLICE BITMAP ────────────────────────────────────────────
+const FR=7, FC=8
+const FG=Array.from({length:27},()=>Array.from({length:FC},()=>new Array(FR).fill(false)))
+const FW=new Array(27).fill(5); FW[26]=3
+function fp(i,pts){pts.forEach(([c,r])=>{if(c<FC&&r<FR)FG[i][c][r]=true})}
+function initFont(){
+  fp(0,[[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[1,0],[1,3],[2,0],[2,3],[3,0],[3,3],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6]])
+  fp(1,[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[1,0],[1,3],[1,6],[2,0],[2,3],[2,6],[3,0],[3,3],[3,6],[4,1],[4,2],[4,4],[4,5]])
+  fp(2,[[0,1],[0,2],[0,3],[0,4],[0,5],[1,0],[1,6],[2,0],[2,6],[3,0],[3,6],[4,0],[4,6]])
+  fp(3,[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[1,0],[1,6],[2,0],[2,6],[3,0],[3,6],[4,1],[4,2],[4,3],[4,4],[4,5]])
+  fp(4,[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[1,0],[1,3],[1,6],[2,0],[2,3],[2,6],[3,0],[3,3],[3,6],[4,0],[4,6]])
+  fp(5,[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[1,0],[1,3],[2,0],[2,3],[3,0],[3,3],[4,0]])
+  fp(6,[[0,1],[0,2],[0,3],[0,4],[0,5],[1,0],[1,6],[2,0],[2,6],[3,0],[3,3],[3,6],[4,0],[4,3],[4,4],[4,5]])
+  fp(7,[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[1,3],[2,3],[3,3],[4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6]])
+  fp(8,[[0,0],[0,6],[1,0],[1,6],[2,0],[2,1],[2,2],[2,3],[2,4],[2,5],[2,6],[3,0],[3,6],[4,0],[4,6]])
+  fp(9,[[0,0],[0,5],[1,0],[1,6],[2,0],[2,6],[3,0],[3,1],[3,2],[3,3],[3,4],[3,5],[4,0]])
+  fp(10,[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[1,3],[2,2],[2,4],[3,1],[3,5],[4,0],[4,6]])
+  fp(11,[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[1,6],[2,6],[3,6],[4,6]])
+  fp(12,[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[1,1],[2,2],[3,1],[4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6]])
+  fp(13,[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[1,2],[2,3],[3,4],[4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6]])
+  fp(14,[[0,1],[0,2],[0,3],[0,4],[0,5],[1,0],[1,6],[2,0],[2,6],[3,0],[3,6],[4,1],[4,2],[4,3],[4,4],[4,5]])
+  fp(15,[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[1,0],[1,3],[2,0],[2,3],[3,0],[3,3],[4,1],[4,2]])
+  fp(16,[[0,1],[0,2],[0,3],[0,4],[0,5],[1,0],[1,6],[2,0],[2,6],[3,0],[3,5],[3,6],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6]])
+  fp(17,[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[1,0],[1,3],[2,0],[2,3],[3,0],[3,3],[3,4],[4,1],[4,2],[4,5],[4,6]])
+  fp(18,[[0,1],[0,2],[0,5],[1,0],[1,3],[1,6],[2,0],[2,3],[2,6],[3,0],[3,3],[3,6],[4,1],[4,4],[4,5]])
+  fp(19,[[0,0],[1,0],[2,0],[2,1],[2,2],[2,3],[2,4],[2,5],[2,6],[3,0],[4,0]])
+  fp(20,[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[1,6],[2,6],[3,6],[4,0],[4,1],[4,2],[4,3],[4,4],[4,5]])
+  fp(21,[[0,0],[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[3,3],[3,4],[4,0],[4,1],[4,2]])
+  fp(22,[[0,0],[0,1],[0,2],[0,3],[0,4],[1,5],[1,6],[2,3],[2,4],[3,5],[3,6],[4,0],[4,1],[4,2],[4,3],[4,4]])
+  fp(23,[[0,0],[0,1],[0,5],[0,6],[1,2],[1,4],[2,3],[3,2],[3,4],[4,0],[4,1],[4,5],[4,6]])
+  fp(24,[[0,0],[0,1],[1,2],[2,3],[2,4],[2,5],[2,6],[3,2],[4,0],[4,1]])
+  fp(25,[[0,0],[0,5],[0,6],[1,0],[1,4],[1,6],[2,0],[2,3],[2,6],[3,0],[3,2],[3,6],[4,0],[4,1],[4,6]])
+}
+
+function placeText(txt, center){
+  S.dots.clear()
+  txt=txt.toUpperCase()
+  const gap=1; let cc=0,cr=0
+  if(center){
+    let totalW=0
+    for(let i=0;i<txt.length;i++){
+      if(txt[i]==='\n')break
+      let idx=26;if(txt[i]>='A'&&txt[i]<='Z')idx=txt[i].charCodeAt(0)-65
+      totalW+=FW[idx]+gap
+    }
+    totalW=Math.max(0,totalW-gap)
+    cc=Math.max(0,Math.floor((S.cols-totalW)/2))
+    cr=Math.max(0,Math.floor((S.rows-FR)/2))
+  }
+  for(let i=0;i<txt.length;i++){
+    const ch=txt[i]
+    if(ch==='\n'){cc=0;cr+=FR+2;continue}
+    let idx=26;if(ch>='A'&&ch<='Z')idx=ch.charCodeAt(0)-65
+    const lw=FW[idx]
+    if(cc+lw>S.cols-1){cc=0;cr+=FR+2}
+    if(cr+FR>S.rows)break
+    if(idx<26){
+      for(let c=0;c<lw;c++)for(let r=0;r<FR;r++)
+        if(FG[idx][c][r]&&cc+c<S.cols&&cr+r<S.rows)
+          S.dots.add(`${cc+c},${cr+r}`)
+    }
+    cc+=lw+gap
+  }
+  dirty=true
+}
+
+// ── STATE ─────────────────────────────────────────────────────
+const S={
+  cols:34,rows:26,margin:50,fusion:0,
+  bw1:2.0,bw2:6.0,bands:20,fgval:255,
+  shape:0,sw:28,sh:28,rot:0,lock:true,lockR:1.0,
+  gridType:0,showGrid:true,invert:false,hover:true,galpha:60,
+  mode:0,freeMode:false,textInput:'NODAL',
+  dots:new Set(),cx:[],cy:[],cw:0,ch:0,md:false,lastV:true
+}
+
+// ── WEBGL ─────────────────────────────────────────────────────
+const gc=document.getElementById('gc')
+const gl=gc.getContext('webgl',{antialias:false,preserveDrawingBuffer:true})
+gl.getExtension('OES_standard_derivatives')
+
+const VS=`attribute vec2 p;void main(){gl_Position=vec4(p,0,1);}`
+const FS=`precision highp float;
+uniform vec2 uRes;uniform int uN;uniform vec2 uPts[512];
+uniform int uShp;uniform float uSW,uSH,uCR,uSR,uK,uBW,uPer,uMaxD,uFG,uBG;uniform int uMode;
+float ell(vec2 p,float a,float b){
+  if(abs(a-b)<.5)return length(p)-a;
+  float ax=abs(p.x),ay=abs(p.y),t=atan(a*ay,b*ax),best=1e9;
+  for(int i=0;i<4;i++){
+    if(i==1)t=0.;else if(i==2)t=.7854;else if(i==3)t=1.5708;
+    for(int j=0;j<15;j++){
+      float c=cos(t),s=sin(t),fx=ax-a*c,fy=ay-b*s;
+      float fp=a*s*fx-b*c*fy,fpp=a*c*fx+b*s*fy+a*a*s*s+b*b*c*c;
+      if(abs(fpp)<1e-10)break;float dt=fp/fpp;t-=dt;t=clamp(t,0.,1.5708);if(abs(dt)<1e-7)break;
+    }
+    float c=cos(t),s=sin(t);best=min(best,distance(vec2(ax,ay),vec2(a*c,b*s)));
+  }
+  return p.x*p.x/(a*a)+p.y*p.y/(b*b)<1.?-best:best;
+}
+float sdf(vec2 q){
+  float lx=uCR*q.x+uSR*q.y,ly=-uSR*q.x+uCR*q.y,w=uSW,h=uSH;
+  if(uShp==0)return ell(vec2(lx,ly),w,h);
+  if(uShp==1){float ax=abs(lx)-w,ay=abs(ly)-h;if(ax>0.&&ay>0.)return sqrt(ax*ax+ay*ay);if(ax>0.)return ax;if(ay>0.)return ay;return max(ax,ay);}
+  if(uShp==2){float ax=abs(lx),ay=abs(ly),l2=w*w+h*h;if(l2<1e-6)return length(q);float t=clamp(((ax-w)*(-w)+ay*h)/l2,0.,1.);vec2 cl=vec2(w+t*(-w),t*h);float d=distance(vec2(ax,ay),cl);return ax/max(w,1e-6)+ay/max(h,1e-6)<=1.?-d:d;}
+  float dx=max(abs(lx)-w,0.);return sqrt(dx*dx+ly*ly)-h;
+}
+float su(float a,float b,float k){if(k<.001)return min(a,b);float h=clamp(.5+.5*(b-a)/k,0.,1.);return h*a+(1.-h)*b-k*h*(1.-h);}
+void main(){
+  vec2 uv=vec2(gl_FragCoord.x,uRes.y-gl_FragCoord.y);
+  float d=1e9;float cull=uSW+uSH+uMaxD+uK+4.;
+  for(int i=0;i<512;i++){if(i>=uN)break;vec2 dv=uv-uPts[i];if(dot(dv,dv)>cull*cull)continue;float di=sdf(dv);d=(d>9e8)?di:su(d,di,uK);}
+  float fg=uFG/255.,bg=uBG/255.,col;
+  if(uN==0){gl_FragColor=vec4(bg,bg,bg,1.);return;}
+  if(uMode==0){col=(d<0.0)?fg:bg;}
+  else{if(d<0.0||d>=uMaxD){col=bg;}else{col=(mod(d,uPer)<uBW)?fg:bg;}}
+  gl_FragColor=vec4(col,col,col,1.);
+}`
+
+function mkSh(t,s){const sh=gl.createShader(t);gl.shaderSource(sh,s);gl.compileShader(sh);return sh}
+const prog=gl.createProgram()
+gl.attachShader(prog,mkSh(gl.VERTEX_SHADER,VS));gl.attachShader(prog,mkSh(gl.FRAGMENT_SHADER,FS))
+gl.linkProgram(prog);gl.useProgram(prog)
+const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf)
+gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW)
+const apos=gl.getAttribLocation(prog,'p');gl.enableVertexAttribArray(apos);gl.vertexAttribPointer(apos,2,gl.FLOAT,false,0,0)
+const U={};['uRes','uN','uPts','uShp','uSW','uSH','uCR','uSR','uK','uBW','uPer','uMaxD','uFG','uBG','uMode'].forEach(n=>U[n]=gl.getUniformLocation(prog,n))
+
+// ── GRILLE ────────────────────────────────────────────────────
+function buildGrid(){
+  const ca=document.getElementById('ca')
+  const W=ca.clientWidth,H=ca.clientHeight
+  const C=Math.max(S.cols,2),R=Math.max(S.rows,2)
+  const cw=(W-S.margin*2)/(C-1),ch=(H-S.margin*2)/(R-1)
+  S.cw=cw;S.ch=ch;S.cx=[];S.cy=[]
+  for(let c=0;c<C;c++){S.cx[c]=[];S.cy[c]=[];for(let r=0;r<R;r++){S.cx[c][r]=S.margin+c*cw;S.cy[c][r]=S.margin+r*ch}}
+  dirty=true
+}
+
+function nearest(mx,my){
+  let bc=-1,br=-1,bd=9999,snap=Math.min(S.cw,S.ch)*.65
+  for(let c=0;c<S.cols;c++)for(let r=0;r<S.rows;r++){
+    if(!S.cx[c]||S.cx[c][r]===undefined)continue
+    const d=Math.hypot(mx-S.cx[c][r],my-S.cy[c][r])
+    if(d<bd&&d<snap){bd=d;bc=c;br=r}
+  }
+  return[bc,br]
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+let dirty=true,lastT=0
+const ov=document.getElementById('ov'),ctx=ov.getContext('2d')
+const hov=document.getElementById('hov')
+
+function renderSDF(g,u,W,H,dpr){
+  const fg=S.invert?0:S.fgval,bg=S.invert?S.fgval:0
+  const pts=[]
+  for(const k of S.dots){const[c,r]=k.split(',').map(Number);if(S.cx[c]&&S.cx[c][r]!==undefined)pts.push(S.cx[c][r]*dpr,S.cy[c][r]*dpr)}
+  const n=pts.length/2
+  const refSz=Math.max(S.sw,S.sh)*dpr,k=S.fusion/100*refSz*1.5
+  const bw=S.bw1*dpr,per=(S.bw1+S.bw2)*dpr,maxD=S.bands*per+bw
+  const rad=S.rot*Math.PI/180
+  g.uniform2f(u.uRes,W,H);g.uniform1i(u.uN,n)
+  if(n>0){const a=new Float32Array(1024);for(let i=0;i<Math.min(n,512);i++){a[i*2]=pts[i*2];a[i*2+1]=pts[i*2+1]};g.uniform2fv(u.uPts,a)}
+  g.uniform1i(u.uShp,S.shape);g.uniform1f(u.uSW,S.sw*dpr);g.uniform1f(u.uSH,S.sh*dpr)
+  g.uniform1f(u.uCR,Math.cos(rad));g.uniform1f(u.uSR,Math.sin(rad))
+  g.uniform1f(u.uK,k);g.uniform1f(u.uBW,bw);g.uniform1f(u.uPer,per);g.uniform1f(u.uMaxD,maxD)
+  g.uniform1i(u.uMode,S.mode);g.uniform1f(u.uFG,fg);g.uniform1f(u.uBG,bg)
+  g.clearColor(bg/255,bg/255,bg/255,1);g.clear(g.COLOR_BUFFER_BIT);g.drawArrays(g.TRIANGLES,0,6)
+}
+
+function drawGrid2D(c2d){
+  const a=S.galpha/255,fg=S.invert?0:S.fgval
+  c2d.strokeStyle=`rgba(${fg},${fg},${fg},${a*.3})`;c2d.lineWidth=.5;c2d.beginPath()
+  for(let c=0;c<S.cols;c++)for(let r=0;r<S.rows;r++){
+    if(!S.cx[c]||S.cx[c][r]===undefined)continue
+    if(c+1<S.cols&&S.cx[c+1]&&S.cx[c+1][r]!==undefined){c2d.moveTo(S.cx[c][r],S.cy[c][r]);c2d.lineTo(S.cx[c+1][r],S.cy[c+1][r])}
+    if(r+1<S.rows&&S.cx[c][r+1]!==undefined){c2d.moveTo(S.cx[c][r],S.cy[c][r]);c2d.lineTo(S.cx[c][r+1],S.cy[c][r+1])}
+  }
+  c2d.stroke()
+  c2d.fillStyle=`rgba(${fg},${fg},${fg},${a*.5})`
+  for(let c=0;c<S.cols;c++)for(let r=0;r<S.rows;r++){
+    if(!S.cx[c]||S.cx[c][r]===undefined)continue
+    if(S.dots.has(`${c},${r}`))continue
+    c2d.beginPath();c2d.arc(S.cx[c][r],S.cy[c][r],2,0,Math.PI*2);c2d.fill()
+  }
+}
+
+function frame(ts){
+  const dpr=window.devicePixelRatio||1
+  const ca=document.getElementById('ca')
+  const W=ca.clientWidth,H=ca.clientHeight
+  const PW=Math.round(W*dpr),PH=Math.round(H*dpr)
+  if(gc.width!==PW||gc.height!==PH){
+    gc.width=PW;gc.height=PH;gc.style.width=W+'px';gc.style.height=H+'px'
+    ov.width=PW;ov.height=PH;ov.style.width=W+'px';ov.style.height=H+'px'
+    gl.viewport(0,0,PW,PH);buildGrid()
+  }
+  const fps=ts-lastT>0?Math.round(1000/(ts-lastT)):0;lastT=ts
+  document.getElementById('st-fps').textContent=fps+' fps'
+  document.getElementById('st-pts').textContent=S.dots.size+' pts'
+  if(!dirty){requestAnimationFrame(frame);return}
+  dirty=false
+  renderSDF(gl,U,PW,PH,dpr)
+  ctx.clearRect(0,0,PW,PH);ctx.save();ctx.scale(dpr,dpr)
+  if(S.showGrid)drawGrid2D(ctx)
+  ctx.restore()
+  requestAnimationFrame(frame)
+}
+
+// ── EXPORT + UPLOAD SUPABASE ──────────────────────────────────
+async function exportFull(){
+  flash('Export en cours...')
+  await new Promise(r=>setTimeout(r,80))
+  const SCALE=4
+  const ca=document.getElementById('ca')
+  const W=ca.clientWidth*SCALE,H=ca.clientHeight*SCALE
+
+  // Canvas WebGL 4x
+  const offGL=document.createElement('canvas');offGL.width=W;offGL.height=H
+  const g2=offGL.getContext('webgl',{preserveDrawingBuffer:true,antialias:false})
+  g2.getExtension('OES_standard_derivatives')
+  const mk=(t,s)=>{const sh=g2.createShader(t);g2.shaderSource(sh,s);g2.compileShader(sh);return sh}
+  const pr2=g2.createProgram()
+  g2.attachShader(pr2,mk(g2.VERTEX_SHADER,VS));g2.attachShader(pr2,mk(g2.FRAGMENT_SHADER,FS))
+  g2.linkProgram(pr2);g2.useProgram(pr2)
+  const vb2=g2.createBuffer();g2.bindBuffer(g2.ARRAY_BUFFER,vb2)
+  g2.bufferData(g2.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),g2.STATIC_DRAW)
+  const ap2=g2.getAttribLocation(pr2,'p');g2.enableVertexAttribArray(ap2);g2.vertexAttribPointer(ap2,2,g2.FLOAT,false,0,0)
+  g2.viewport(0,0,W,H)
+  const U2={};['uRes','uN','uPts','uShp','uSW','uSH','uCR','uSR','uK','uBW','uPer','uMaxD','uFG','uBG','uMode'].forEach(n=>U2[n]=g2.getUniformLocation(pr2,n))
+  renderSDF(g2,U2,W,H,SCALE)
+
+  // Canvas 2D : SDF + grille
+  const offV=document.createElement('canvas');offV.width=W;offV.height=H
+  const cv=offV.getContext('2d')
+  cv.drawImage(offGL,0,0)
+  if(S.showGrid){cv.save();cv.scale(SCALE,SCALE);drawGrid2D(cv);cv.restore()}
+
+  // Panel paramètres Canvas2D
+  const PW=272*SCALE,PH=H
+  const pc=document.createElement('canvas');pc.width=PW;pc.height=PH
+  const px=pc.getContext('2d')
+  for(let y=0;y<PH;y+=4)for(let x=0;x<PW;x+=4){
+    px.fillStyle=((Math.floor(x/4)+Math.floor(y/4))%2===0)?'#aaa':'#888';px.fillRect(x,y,4,4)
+  }
+  const m=SCALE*4,fs=SCALE*9,lh=fs*2.3
+  px.fillStyle='#fff';px.fillRect(m,m,PW-m*2,PH-m*2)
+  const th=Math.round(fs*2.8)
+  px.fillStyle='#000';px.fillRect(m,m,PW-m*2,th)
+  px.fillStyle='rgba(255,255,255,0.15)'
+  for(let y=m+3;y<m+th-1;y+=4)px.fillRect(m+SCALE*2,y,PW-m*2-SCALE*4,2)
+  px.fillStyle='#fff';px.font=`bold ${Math.round(fs*1.2)}px "Courier New"`;px.textAlign='center';px.textBaseline='middle'
+  px.fillText('NODAL',PW/2,m+th/2)
+  px.fillStyle='#000';px.fillRect(m,m+th,PW-m*2,2)
+  const lines=[
+    ['TEXTE',(S.textInput||'').replace(/\n/g,'↵').substring(0,16)||'—'],
+    ['MODE',S.mode===0?'PLEIN':'BANDES'],
+    ['FORME',['CERCLE','RECT','LOSANGE','TRAIT'][S.shape]],
+    ['L × H',S.sw.toFixed(1)+' × '+S.sh.toFixed(1)],
+    ['ROTATION',S.rot+'°'],['FUSION',S.fusion],
+    ['COLS × ROWS',S.cols+' × '+S.rows],['MARGE',S.margin],
+    ['EPAISSEUR',S.bw1.toFixed(1)],['ESPACEMENT',S.bw2.toFixed(1)],
+    ['NB BANDES',S.bands],['FG',S.fgval],
+    ['INVERT',S.invert?'OUI':'NON'],['POINTS',S.dots.size],
+  ]
+  px.textAlign='left';px.textBaseline='middle'
+  lines.forEach(([k,v],i)=>{
+    const y=m+th+2+i*lh
+    if(i%2===0){px.fillStyle='#f0f0f0';px.fillRect(m,y,PW-m*2,lh)}
+    px.fillStyle='#999';px.font=`${Math.round(fs*.8)}px "Courier New"`;px.fillText(k,m+fs*.5,y+lh*.28)
+    px.fillStyle='#000';px.font=`bold ${fs}px "Courier New"`;px.fillText(String(v),m+fs*.5,y+lh*.72)
+  })
+  px.strokeStyle='#000';px.lineWidth=2;px.strokeRect(m,m,PW-m*2,PH-m*2)
+
+  const ts=Date.now()
+  const nameV=`${ts}_visuel.png`
+  const nameP=`${ts}_panel.png`
+
+  // Téléchargement local
+  offV.toBlob(async blobV=>{
+    const urlV=URL.createObjectURL(blobV)
+    const a=document.createElement('a');a.href=urlV;a.download=`nodal_visuel_${ts}.png`;a.click()
+    pc.toBlob(async blobP=>{
+      const urlP=URL.createObjectURL(blobP)
+      const b=document.createElement('a');b.href=urlP;b.download=`nodal_panel_${ts}.png`;b.click()
+      // Upload Supabase
+      flash('Envoi en cours...')
+      try{
+        await uploadToSupabase(blobV, nameV)
+        await uploadToSupabase(blobP, nameP)
+        flash('Exports sauvés et envoyés ✓')
+      }catch(e){
+        flash('Exports sauvés localement ✓')
+        console.error('Upload error:',e)
+      }
+    },'image/png')
+  },'image/png')
+}
+
+// ── SLIDERS ───────────────────────────────────────────────────
+const SLIDERS={
+  'sr-cols':  {key:'cols',  mn:3, mx:80,step:1,  int:true, fmt:v=>v,           init:34},
+  'sr-rows':  {key:'rows',  mn:3, mx:80,step:1,  int:true, fmt:v=>v,           init:26},
+  'sr-margin':{key:'margin',mn:10,mx:200,step:1, int:false,fmt:v=>v,           init:50},
+  'sr-fusion':{key:'fusion',mn:0, mx:100,step:1, int:false,fmt:v=>v,           init:0},
+  'sr-bw1':   {key:'bw1',  mn:0.1,mx:8, step:.1, int:false,fmt:v=>v.toFixed(1),init:2.0},
+  'sr-bw2':   {key:'bw2',  mn:0.1,mx:15,step:.1, int:false,fmt:v=>v.toFixed(1),init:6.0},
+  'sr-bands': {key:'bands', mn:1, mx:80,step:1,  int:true, fmt:v=>v,           init:20},
+  'sr-fgval': {key:'fgval', mn:0, mx:255,step:1, int:true, fmt:v=>v,           init:255},
+  'sr-sw':    {key:'sw',   mn:2, mx:200,step:.5, int:false,fmt:v=>v.toFixed(1),init:28},
+  'sr-sh':    {key:'sh',   mn:2, mx:200,step:.5, int:false,fmt:v=>v.toFixed(1),init:28},
+  'sr-rot':   {key:'rot',  mn:0, mx:360,step:1,  int:true, fmt:v=>v+'°',       init:0},
+  'sr-galpha':{key:'galpha',mn:0,mx:255,step:1,  int:true, fmt:v=>v,           init:60},
+}
+
+function setThumb(id,val){
+  const cfg=SLIDERS[id],sr=document.getElementById(id)
+  const track=sr.querySelector('.sl-track'),thumb=sr.querySelector('.sl-thumb')
+  const pct=(val-cfg.mn)/(cfg.mx-cfg.mn)
+  thumb.style.left=(pct*track.clientWidth)+'px'
+  document.getElementById('v-'+cfg.key).textContent=cfg.fmt(val)
+}
+
+function initSliders(){
+  for(const[id,cfg]of Object.entries(SLIDERS)){
+    const sr=document.getElementById(id)
+    const track=sr.querySelector('.sl-track')
+    let dragging=false
+    const update=e=>{
+      const rect=track.getBoundingClientRect()
+      const pct=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width))
+      let val=cfg.mn+pct*(cfg.mx-cfg.mn)
+      if(cfg.int)val=Math.round(val);else val=Math.round(val/cfg.step)*cfg.step
+      val=Math.max(cfg.mn,Math.min(cfg.mx,val))
+      if(cfg.key==='sw'&&S.lock){S.sw=val;S.sh=val*S.lockR;setThumb('sr-sh',S.sh)}
+      else if(cfg.key==='sh'&&S.lock){S.sh=val;S.sw=S.lockR>0.001?val/S.lockR:val;setThumb('sr-sw',S.sw)}
+      else S[cfg.key]=val
+      setThumb(id,val)
+      if(['cols','rows','margin'].includes(cfg.key))buildGrid()
+      dirty=true
+    }
+    track.addEventListener('mousedown',e=>{dragging=true;update(e)})
+    track.querySelector('.sl-thumb').addEventListener('mousedown',e=>{dragging=true;e.stopPropagation()})
+    window.addEventListener('mousemove',e=>{if(dragging)update(e)})
+    window.addEventListener('mouseup',()=>{dragging=false})
+    setThumb(id,cfg.init)
+  }
+}
+
+// ── PANEL BG ──────────────────────────────────────────────────
+function drawPanelBg(){
+  const c=document.getElementById('panel-bg')
+  const W=272,H=window.innerHeight
+  c.width=W;c.height=H;c.style.width=W+'px';c.style.height=H+'px'
+  const x=c.getContext('2d')
+  for(let y=0;y<H;y+=2)for(let px=0;px<W;px+=2){
+    x.fillStyle=((px/2+y/2)%2===0)?'#aaa':'#888';x.fillRect(px,y,2,2)
+  }
+}
+
+// ── SCROLL ────────────────────────────────────────────────────
+let scrollY=0
+function updateScroll(){
+  const inner=document.getElementById('psc-inner')
+  const psc=document.getElementById('psc')
+  const maxScroll=Math.max(0,inner.scrollHeight-psc.clientHeight)
+  scrollY=Math.max(0,Math.min(scrollY,maxScroll))
+  inner.style.transform=`translateY(${-scrollY}px)`
+  const sbTrack=document.getElementById('sb-track')
+  const sbThumb=document.getElementById('sb-thumb')
+  const ratio=psc.clientHeight/Math.max(inner.scrollHeight,1)
+  const thumbH=Math.max(20,sbTrack.clientHeight*ratio)
+  sbThumb.style.height=thumbH+'px'
+  const thumbY=maxScroll>0?(scrollY/maxScroll)*(sbTrack.clientHeight-thumbH):0
+  sbThumb.style.top=thumbY+'px'
+}
+document.getElementById('sb-up').addEventListener('click',()=>{scrollY-=20;updateScroll()})
+document.getElementById('sb-dn').addEventListener('click',()=>{scrollY+=20;updateScroll()})
+document.getElementById('psc').addEventListener('wheel',e=>{scrollY+=e.deltaY*.5;updateScroll()},{passive:true})
+
+let sbDrag=false,sbDragY=0,sbDragStart=0
+document.getElementById('sb-thumb').addEventListener('mousedown',e=>{sbDrag=true;sbDragY=e.clientY;sbDragStart=scrollY;e.preventDefault()})
+window.addEventListener('mousemove',e=>{
+  if(!sbDrag)return
+  const inner=document.getElementById('psc-inner'),psc=document.getElementById('psc'),sbTrack=document.getElementById('sb-track')
+  const maxScroll=Math.max(0,inner.scrollHeight-psc.clientHeight)
+  scrollY=sbDragStart+(e.clientY-sbDragY)*(maxScroll/Math.max(1,sbTrack.clientHeight))
+  updateScroll()
+})
+window.addEventListener('mouseup',()=>{sbDrag=false})
+
+// ── CONTROLS ──────────────────────────────────────────────────
+document.querySelectorAll('.shp').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.shp').forEach(x=>x.classList.remove('on'))
+  b.classList.add('on');S.shape=+b.dataset.s;dirty=true
+}))
+document.getElementById('lk').addEventListener('click',()=>{
+  S.lock=!S.lock;const lk=document.getElementById('lk')
+  if(S.lock){S.sh=S.sw;S.lockR=1;setThumb('sr-sh',S.sh);lk.textContent='🔒';lk.classList.add('on')}
+  else{S.lockR=S.sh>0?S.sw/S.sh:1;lk.textContent='🔓';lk.classList.remove('on')}
+  dirty=true
+})
+function ck(id,key){
+  document.getElementById(id).addEventListener('click',()=>{
+    S[key]=!S[key];document.getElementById(id).querySelector('.ckb').classList.toggle('on',S[key]);dirty=true
+  })
+}
+ck('ck-grid','showGrid');ck('ck-inv','invert');ck('ck-hov','hover')
+document.getElementById('b-plein').addEventListener('click',()=>{S.mode=0;document.getElementById('b-plein').classList.add('on');document.getElementById('b-bandes').classList.remove('on');dirty=true})
+document.getElementById('b-bandes').addEventListener('click',()=>{S.mode=1;document.getElementById('b-bandes').classList.add('on');document.getElementById('b-plein').classList.remove('on');dirty=true})
+document.getElementById('b-clear').addEventListener('click',()=>{S.dots.clear();dirty=true})
+document.getElementById('b-export').addEventListener('click',exportFull)
+
+const tf=document.getElementById('txt-field')
+tf.value=S.textInput
+tf.addEventListener('input',()=>{S.textInput=tf.value;placeText(S.textInput,false)})
+tf.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){setTimeout(()=>{S.textInput=tf.value;placeText(S.textInput,false)},0)}
+})
+document.getElementById('b-place').addEventListener('click',()=>placeText(tf.value,false))
+document.getElementById('b-clrtxt').addEventListener('click',()=>{S.textInput='';tf.value='';S.dots.clear();dirty=true})
+
+function flash(msg){
+  const el=document.getElementById('flash');el.textContent=msg;el.classList.add('on')
+  clearTimeout(flash._t);flash._t=setTimeout(()=>el.classList.remove('on'),3000)
+}
+
+// ── MOUSE ─────────────────────────────────────────────────────
+const ca=document.getElementById('ca')
+ca.addEventListener('mousedown',e=>{
+  if(!S.freeMode)return
+  const[c,r]=nearest(e.offsetX,e.offsetY);if(c<0)return
+  const key=`${c},${r}`;S.lastV=!S.dots.has(key);S.lastV?S.dots.add(key):S.dots.delete(key);S.md=true;dirty=true
+})
+ca.addEventListener('mousemove',e=>{
+  if(S.md&&S.freeMode){const[c,r]=nearest(e.offsetX,e.offsetY);if(c>=0){const k=`${c},${r}`;S.lastV?S.dots.add(k):S.dots.delete(k);dirty=true}}
+  if(S.hover){const[c,r]=nearest(e.offsetX,e.offsetY);if(c>=0&&S.cx[c]&&S.cx[c][r]!==undefined){const r2=(Math.max(S.sw,S.sh)+8)*2;hov.style.cssText=`display:block;left:${S.cx[c][r]}px;top:${S.cy[c][r]}px;width:${r2}px;height:${r2}px`}else hov.style.display='none'}else hov.style.display='none'
+})
+window.addEventListener('mouseup',()=>{S.md=false})
+ca.addEventListener('mouseleave',()=>{hov.style.display='none'})
+
+window.addEventListener('keydown',e=>{
+  if((e.key==='l'||e.key==='L')&&e.shiftKey&&(e.metaKey||e.ctrlKey)){S.freeMode=!S.freeMode;document.getElementById('free-ind').classList.toggle('on',S.freeMode);return}
+  if(document.activeElement===tf)return
+  if(e.key==='c'&&!e.metaKey&&!e.ctrlKey){S.dots.clear();dirty=true}
+  if(e.key==='g'){S.showGrid=!S.showGrid;dirty=true}
+  if(e.key==='i'){S.invert=!S.invert;dirty=true}
+  if(['1','2','3','4'].includes(e.key)){S.shape=+e.key-1;document.querySelectorAll('.shp').forEach(b=>b.classList.toggle('on',+b.dataset.s===S.shape));dirty=true}
+})
+
+window.addEventListener('resize',()=>{drawPanelBg();buildGrid();updateScroll();dirty=true})
+
+// ── INIT ──────────────────────────────────────────────────────
+drawPanelBg();initFont();initSliders();buildGrid()
+placeText(S.textInput,true)
+requestAnimationFrame(frame)
+setTimeout(updateScroll,100)
+</script>
+</body>
+</html>
